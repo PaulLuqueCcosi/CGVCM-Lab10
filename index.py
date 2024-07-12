@@ -1,7 +1,6 @@
 import cv2
 from cvzone.HandTrackingModule import HandDetector
 from time import sleep
-import cvzone
 from pynput.keyboard import Controller
 import numpy as np
 
@@ -36,7 +35,6 @@ def draw_all_buttons(img, button_list):
     for button in button_list:
         x, y = button.pos
         w, h = button.size
-        cvzone.cornerRect(img, (x, y, w, h), 20, rt=0)
         cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 255), cv2.FILLED)
         cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
     return img
@@ -44,12 +42,6 @@ def draw_all_buttons(img, button_list):
 # Verifica si un punto está dentro de un área rectangular
 def is_point_in_rectangle(x, y, w, h, px, py):
     return x < px < x + w and y < py < y + h
-
-# Dibuja el texto final en la pantalla
-def draw_final_text(img, text):
-    cv2.rectangle(img, (50, 350), (700, 450), (175, 0, 175), cv2.FILLED)
-    cv2.putText(img, text, (60, 430), cv2.FONT_HERSHEY_PLAIN, 5, (255, 255, 255), 5)
-    return img
 
 # Lógica principal del programa refactorizada para mejorar la velocidad
 def main():
@@ -64,9 +56,15 @@ def main():
 
     while True:
         success, img = cap.read()
-        img_copy = img.copy()  # Copia de la imagen original para mantener las detecciones de manos
 
-        hands, img = detector.findHands(img_copy)
+        # Copia de la imagen original para mantener las detecciones de manos
+        img_copy = img.copy()
+
+        # Detección de manos en la imagen copiada
+        hands, img_copy = detector.findHands(img_copy)
+
+        # Dibuja los botones en la imagen original
+        img = draw_all_buttons(img, button_list)
 
         if hands:
             hand = hands[0]
@@ -91,10 +89,14 @@ def main():
                         final_text += button.text  # Añade la tecla al texto final
                         sleep(0.15)  # Espera un momento para evitar múltiples detecciones
 
-        img = draw_final_text(img, final_text)
-        cv2.imshow("Image", img)  # Muestra la imagen
-        cv2.waitKey(1)  # Espera 1 ms antes de continuar al siguiente frame
+        cv2.putText(img, final_text, (50, 600), cv2.FONT_HERSHEY_PLAIN, 5, (255, 255, 255), 5)
 
+        cv2.imshow("Image", img)  # Muestra la imagen
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
