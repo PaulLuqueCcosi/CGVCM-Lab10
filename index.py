@@ -50,7 +50,7 @@ def main():
     # Definición de las teclas en el teclado virtual
     keys = [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
             ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
-            ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]]
+            ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "BORRAR"]]
     
     button_list = create_buttons(keys)
     final_text = ""
@@ -60,10 +60,10 @@ def main():
         success, img = cap.read()
 
         # Copia de la imagen original para mantener las detecciones de manos
-        img_copy = img.copy()
+        # img_copy = img.copy()
 
         # Detección de manos en la imagen copiada
-        hands, img_copy = detector.findHands(img_copy)
+        hands, img = detector.findHands(img)
 
         # Dibuja los botones en la imagen original
         img = draw_all_buttons(img, button_list)
