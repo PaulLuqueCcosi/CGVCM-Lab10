@@ -3,6 +3,7 @@ from cvzone.HandTrackingModule import HandDetector
 from time import sleep
 import cvzone
 from pynput.keyboard import Controller
+import numpy as np
 
 # Inicialización de la cámara y configuración de la resolución
 def init_camera(width=1280, height=720):
@@ -50,7 +51,7 @@ def draw_final_text(img, text):
     cv2.putText(img, text, (60, 430), cv2.FONT_HERSHEY_PLAIN, 5, (255, 255, 255), 5)
     return img
 
-# Lógica principal del programa
+# Lógica principal del programa refactorizada para mejorar la velocidad
 def main():
     cap = init_camera()
     detector = init_hand_detector()
@@ -63,24 +64,24 @@ def main():
 
     while True:
         success, img = cap.read()
-        hands, img = detector.findHands(img)
-        img = draw_all_buttons(img, button_list)
+        img_copy = img.copy()  # Copia de la imagen original para mantener las detecciones de manos
+
+        hands, img = detector.findHands(img_copy)
 
         if hands:
             hand = hands[0]
             lm_list = hand["lmList"]
+            point1 = lm_list[8][:2]  # Punta del índice
+            point2 = lm_list[4][:2]  # Punta del pulgar
 
             for button in button_list:
                 x, y = button.pos
                 w, h = button.size
 
-                if is_point_in_rectangle(x, y, w, h, lm_list[8][0], lm_list[8][1]):
+                if is_point_in_rectangle(x, y, w, h, point1[0], point1[1]):
                     cv2.rectangle(img, (x - 5, y - 5), (x + w + 5, y + h + 5), (175, 0, 175), cv2.FILLED)
                     cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
-                    
-                    # Extraer solo las coordenadas (x, y) de lmList[8] y lmList[4]
-                    point1 = lm_list[8][:2]  # Punta del índice
-                    point2 = lm_list[4][:2]  # Punta del pulgar
+
                     l, _, _ = detector.findDistance(point1, point2)  # Calcula la distancia entre la punta del índice y la punta del pulgar
 
                     if l < 30:
@@ -93,6 +94,7 @@ def main():
         img = draw_final_text(img, final_text)
         cv2.imshow("Image", img)  # Muestra la imagen
         cv2.waitKey(1)  # Espera 1 ms antes de continuar al siguiente frame
+
 
 if __name__ == "__main__":
     main()
