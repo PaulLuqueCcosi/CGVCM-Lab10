@@ -81,7 +81,7 @@ def main():
                     # Extraer solo las coordenadas (x, y) de lmList[8] y lmList[12]
                     point1 = lm_list[8][:2]
                     point2 = lm_list[12][:2]
-                    l, _ = detector.findDistance(point1, point2)  # Calcula la distancia entre la punta del índice y la punta del dedo medio
+                    l, _, _ = detector.findDistance(point1, point2)  # Calcula la distancia entre la punta del índice y la punta del dedo medio
 
                     if l < 30:
                         keyboard.press(button.text)  # Presiona la tecla correspondiente en el teclado físico
