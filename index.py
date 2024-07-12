@@ -78,10 +78,10 @@ def main():
                     cv2.rectangle(img, (x - 5, y - 5), (x + w + 5, y + h + 5), (175, 0, 175), cv2.FILLED)
                     cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
                     
-                    # Extraer solo las coordenadas (x, y) de lmList[8] y lmList[12]
-                    point1 = lm_list[8][:2]
-                    point2 = lm_list[12][:2]
-                    l, _, _ = detector.findDistance(point1, point2)  # Calcula la distancia entre la punta del índice y la punta del dedo medio
+                    # Extraer solo las coordenadas (x, y) de lmList[8] y lmList[4]
+                    point1 = lm_list[8][:2]  # Punta del índice
+                    point2 = lm_list[4][:2]  # Punta del pulgar
+                    l, _, _ = detector.findDistance(point1, point2)  # Calcula la distancia entre la punta del índice y la punta del pulgar
 
                     if l < 30:
                         keyboard.press(button.text)  # Presiona la tecla correspondiente en el teclado físico
