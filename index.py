@@ -2,6 +2,7 @@ import cv2
 from cvzone.HandTrackingModule import HandDetector
 from time import sleep
 from pynput.keyboard import Controller
+from pynput.keyboard import Key
 
 # Inicialización de la cámara y configuración de la resolución
 def init_camera(width=1280, height=720):
@@ -32,72 +33,71 @@ def create_buttons(keys):
 # Dibuja todos los botones en la imagen
 def draw_all_buttons(img, button_list):
     for button in button_list:
-        x, y = button.pos
-        w, h = button.size
-        cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 255), cv2.FILLED)
-        cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
+        draw_button(img, button)
     return img
+
+# Dibuja un botón individual en la imagen
+def draw_button(img, button, color=(255, 0, 255)):
+    x, y = button.pos
+    w, h = button.size
+    cv2.rectangle(img, (x, y), (x + w, y + h), color, cv2.FILLED)
+    cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
 
 # Verifica si un punto está dentro de un área rectangular
 def is_point_in_rectangle(x, y, w, h, px, py):
     return x < px < x + w and y < py < y + h
 
+# Maneja la detección de manos y la interacción con los botones
+def handle_hand_detection(img, hands, button_list, final_text, keyboard, detector):
+    if not hands:
+        return final_text
+
+    hand = hands[0]
+    lm_list = hand["lmList"]
+    point1 = lm_list[4][:2]  # Punta del Pulgar
+    point2 = lm_list[8][:2]  # Punta del Indice
+
+    for button in button_list:
+        if is_point_in_rectangle(*button.pos, *button.size, *point1):
+            draw_button(img, button, color=(175, 0, 175))
+            l, _, _ = detector.findDistance(point1, point2)
+
+            if l < 30:
+                if button.text == "<-":
+                    if final_text:
+                        final_text = final_text[:-1]
+                        keyboard.press(Key.backspace)
+                else:
+                    keyboard.press(button.text)
+                    final_text += button.text
+                draw_button(img, button, color=(0, 255, 0))
+                sleep(0.15)
+
+    return final_text
+
 # Lógica principal del programa refactorizada para mejorar la velocidad
 def main():
     cap = init_camera()
     detector = init_hand_detector()
-    
-    # Definición de las teclas en el teclado virtual
-    keys = [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-            ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
-            ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "BORRAR"]]
-    
+    keys = [
+        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+        ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
+        ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "<-"]
+    ]
     button_list = create_buttons(keys)
     final_text = ""
     keyboard = Controller()
 
     while True:
         success, img = cap.read()
-
-        # Copia de la imagen original para mantener las detecciones de manos
-        # img_copy = img.copy()
-
-        # Detección de manos en la imagen copiada
         hands, img = detector.findHands(img)
-
-        # Dibuja los botones en la imagen original
         img = draw_all_buttons(img, button_list)
-
-        if hands:
-            hand = hands[0]
-            lm_list = hand["lmList"]
-            point1 = lm_list[8][:2]  # Punta del índice
-            point2 = lm_list[4][:2]  # Punta del pulgar
-
-            for button in button_list:
-                x, y = button.pos
-                w, h = button.size
-
-                # Verifica si el dedo índice está sobre un botón
-                if is_point_in_rectangle(x, y, w, h, point1[0], point1[1]):
-                    cv2.rectangle(img, (x - 5, y - 5), (x + w + 5, y + h + 5), (175, 0, 175), cv2.FILLED)
-                    cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
-
-                    # Calcula la distancia entre el índice y el pulgar
-                    l, _, _ = detector.findDistance(point1, point2)
-
-                    # Si la distancia es pequeña, simula la pulsación de la tecla
-                    if l < 30:
-                        keyboard.press(button.text)
-                        cv2.rectangle(img, button.pos, (x + w, y + h), (0, 255, 0), cv2.FILLED)
-                        cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
-                        final_text += button.text  # Añade la tecla al texto final
-                        sleep(0.15)  # Espera un momento para evitar múltiples detecciones
+        final_text = handle_hand_detection(img, hands, button_list, final_text, keyboard, detector)
 
         # Muestra el texto final en la imagen
         cv2.putText(img, final_text, (50, 600), cv2.FONT_HERSHEY_PLAIN, 5, (255, 255, 255), 5)
+        cv2.imshow("Image", img)
 
-        cv2.imshow("Image", img)  # Muestra la imagen
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
