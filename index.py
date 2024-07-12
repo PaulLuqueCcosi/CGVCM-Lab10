@@ -2,7 +2,6 @@ import cv2
 from cvzone.HandTrackingModule import HandDetector
 from time import sleep
 from pynput.keyboard import Controller
-import numpy as np
 
 # Inicialización de la cámara y configuración de la resolución
 def init_camera(width=1280, height=720):
@@ -47,9 +46,12 @@ def is_point_in_rectangle(x, y, w, h, px, py):
 def main():
     cap = init_camera()
     detector = init_hand_detector()
+    
+    # Definición de las teclas en el teclado virtual
     keys = [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
             ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
             ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]]
+    
     button_list = create_buttons(keys)
     final_text = ""
     keyboard = Controller()
@@ -76,19 +78,23 @@ def main():
                 x, y = button.pos
                 w, h = button.size
 
+                # Verifica si el dedo índice está sobre un botón
                 if is_point_in_rectangle(x, y, w, h, point1[0], point1[1]):
                     cv2.rectangle(img, (x - 5, y - 5), (x + w + 5, y + h + 5), (175, 0, 175), cv2.FILLED)
                     cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
 
-                    l, _, _ = detector.findDistance(point1, point2)  # Calcula la distancia entre la punta del índice y la punta del pulgar
+                    # Calcula la distancia entre el índice y el pulgar
+                    l, _, _ = detector.findDistance(point1, point2)
 
+                    # Si la distancia es pequeña, simula la pulsación de la tecla
                     if l < 30:
-                        keyboard.press(button.text)  # Presiona la tecla correspondiente en el teclado físico
+                        keyboard.press(button.text)
                         cv2.rectangle(img, button.pos, (x + w, y + h), (0, 255, 0), cv2.FILLED)
                         cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4)
                         final_text += button.text  # Añade la tecla al texto final
                         sleep(0.15)  # Espera un momento para evitar múltiples detecciones
 
+        # Muestra el texto final en la imagen
         cv2.putText(img, final_text, (50, 600), cv2.FONT_HERSHEY_PLAIN, 5, (255, 255, 255), 5)
 
         cv2.imshow("Image", img)  # Muestra la imagen
